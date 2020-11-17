@@ -1,8 +1,8 @@
 /* eslint-disable no-console, import/no-dynamic-require, node/global-require -- required */
 import { ok } from 'assert';
 import { join } from 'path';
-const compat = require('core-js-compat/data');
-const entries = require('core-js-compat/entries');
+import compat from '@core-js/compat/data';
+import entries from '@core-js/compat/entries';
 
 const expected = new Set(Object.keys(entries));
 const tested = new Set();
@@ -16,7 +16,7 @@ function load(...components) {
 }
 
 for (PATH of ['core-js-pure', 'core-js']) {
-  for (const NS of ['es', 'stable', 'features']) {
+  for (const NS of ['es', 'stable', 'actual', 'full']) {
     let O;
     ok(load(NS, 'global-this').Math === Math);
     ok(new (load(NS, 'aggregate-error'))([42]).errors[0] === 42);
@@ -47,20 +47,10 @@ for (PATH of ['core-js-pure', 'core-js']) {
     ok(typeof load(NS, 'object/lookup-getter') === 'function');
     ok(typeof load(NS, 'object/lookup-setter') === 'function');
     ok('values' in load(NS, 'object'));
-    ok(load(NS, 'function/bind')(function (a, b) {
-      return this + a + b;
-    }, 1, 2)(3) === 6);
-    ok(load(NS, 'function/virtual/bind').call(function (a, b) {
-      return this + a + b;
-    }, 1, 2)(3) === 6);
-    ok(load(NS, 'function/virtual').bind.call(function (a, b) {
-      return this + a + b;
-    }, 1, 2)(3) === 6);
     load(NS, 'function/name');
     load(NS, 'function/has-instance');
     load(NS, 'function');
     ok(Array.isArray(load(NS, 'array/from')('qwe')));
-    ok(load(NS, 'array/is-array')([]));
     ok(Array.isArray(load(NS, 'array/of')('q', 'w', 'e')));
     ok(load(NS, 'array/join')('qwe', 1) === 'q1w1e');
     ok(load(NS, 'array/slice')('qwe', 1)[1] === 'e');
@@ -113,7 +103,6 @@ for (PATH of ['core-js-pure', 'core-js']) {
     ok('next' in load(NS, 'array/virtual/values').call([]));
     ok(load(NS, 'array/virtual/includes').call([1, 2, 3], 2));
     ok('next' in load(NS, 'array/virtual/iterator').call([]));
-    ok('map' in load(NS, 'array/virtual'));
     ok('from' in load(NS, 'array'));
     ok(load(NS, 'array/splice')([1, 2, 3], 1, 2)[0] === 2);
     ok(load(NS, 'math/acosh')(1) === 0);
@@ -151,7 +140,6 @@ for (PATH of ['core-js-pure', 'core-js']) {
     ok(load(NS, 'parse-int')('2.1') === 2);
     ok(load(NS, 'number/virtual/to-fixed').call(1, 1) === '1.0');
     ok(load(NS, 'number/virtual/to-precision').call(1) === '1');
-    ok('toPrecision' in load(NS, 'number/virtual'));
     ok('isNaN' in load(NS, 'number'));
     ok(load(NS, 'reflect/apply')((a, b) => a + b, null, [1, 2]) === 3);
     ok(load(NS, 'reflect/construct')(function () {
@@ -231,7 +219,6 @@ for (PATH of ['core-js-pure', 'core-js']) {
     ok(load(NS, 'string/virtual/pad-start').call('a', 3) === '  a');
     ok(load(NS, 'string/virtual/pad-end').call('a', 3) === 'a  ');
     ok('next' in load(NS, 'string/virtual/iterator').call('qwe'));
-    ok('padEnd' in load(NS, 'string/virtual'));
     ok('raw' in load(NS, 'string'));
     ok(String(load(NS, 'regexp/constructor')('a', 'g')) === '/a/g');
     ok(load(NS, 'regexp/to-string')(/./g) === '/./g');
@@ -250,20 +237,16 @@ for (PATH of ['core-js-pure', 'core-js']) {
     ok(load(NS, 'json/stringify')([1]) === '[1]');
     ok(load(NS, 'json/to-string-tag') === 'JSON');
 
-    ok(typeof load(NS, '/date/now')(new Date()) === 'number');
     const date = new Date();
     ok(load(NS, 'date/get-year')(date) === date.getFullYear() - 1900);
     load(NS, 'date/set-year')(date, 1);
     ok(date.getFullYear() === 1901);
-    ok(typeof load(NS, 'date/to-string')(date) === 'string');
     ok(load(NS, 'date/to-gmt-string')(date) === date.toUTCString());
     ok(typeof load(NS, 'date/to-primitive')(new Date(), 'number') === 'number');
     ok(typeof load(NS, 'date/to-iso-string')(new Date()) === 'string');
     ok(load(NS, 'date/to-json')(Infinity) === null);
     ok(load(NS, 'date'));
-    ok(typeof load(NS, 'symbol') === 'function');
-    ok(typeof load(NS, 'symbol/for') === 'function');
-    ok(typeof load(NS, 'symbol/key-for') === 'function');
+    ok(typeof load(NS, 'symbol/constructor') === 'function');
     ok(Function[load(NS, 'symbol/has-instance')](it => it));
     ok(load(NS, 'symbol/is-concat-spreadable'));
     ok(load(NS, 'symbol/iterator'));
@@ -278,6 +261,9 @@ for (PATH of ['core-js-pure', 'core-js']) {
     ok(load(NS, 'symbol/unscopables'));
     ok(load(NS, 'symbol/async-iterator'));
     load(NS, 'symbol/description');
+    ok(typeof load(NS, 'symbol/for') === 'function');
+    ok(typeof load(NS, 'symbol/key-for') === 'function');
+    ok('iterator' in load(NS, 'symbol'));
     const Map = load(NS, 'map');
     const Set = load(NS, 'set');
     const WeakMap = load(NS, 'weak-map');
@@ -286,21 +272,21 @@ for (PATH of ['core-js-pure', 'core-js']) {
     ok(new Set([1, 2, 3, 2, 1]).size === 3);
     ok(new WeakMap([[O = {}, 42]]).get(O) === 42);
     ok(new WeakSet([O = {}]).has(O));
-    const Promise = load(NS, 'promise');
+    const Promise = load(NS, 'promise/constructor');
     ok('then' in Promise.prototype);
+    ok(load(NS, 'promise/all')([1, 2, 3]) instanceof Promise);
     ok(load(NS, 'promise/all-settled')([1, 2, 3]) instanceof Promise);
     ok(load(NS, 'promise/any')([1, 2, 3]) instanceof Promise);
+    ok(load(NS, 'promise/catch')(new Promise(it => it), it => it) instanceof Promise);
     ok(load(NS, 'promise/finally')(new Promise(it => it), it => it) instanceof Promise);
+    ok(load(NS, 'promise/race')([1, 2, 3]) instanceof Promise);
+    ok(load(NS, 'promise/reject')(1).then(it => it, error => error) instanceof Promise);
+    ok(load(NS, 'promise/resolve')(1) instanceof Promise);
+    ok(load(NS, 'promise') === Promise);
     ok(load(NS, 'is-iterable')([]));
     ok(typeof load(NS, 'get-iterator-method')([]) === 'function');
     ok('next' in load(NS, 'get-iterator')([]));
     ok('Map' in load(NS));
-
-    const instanceBind = load(NS, 'instance/bind');
-    ok(typeof instanceBind === 'function');
-    ok(instanceBind({}) === undefined);
-    ok(typeof instanceBind(it => it) === 'function');
-    ok(instanceBind(it => it).call(it => it, 1, 2)() === 2);
 
     const instanceCodePointAt = load(NS, 'instance/code-point-at');
     ok(typeof instanceCodePointAt === 'function');
@@ -527,7 +513,7 @@ for (PATH of ['core-js-pure', 'core-js']) {
     ok(instanceValues([]).call([1, 2, 3]).next().value === 1);
   }
 
-  for (const NS of ['stable', 'features']) {
+  for (const NS of ['stable', 'actual', 'full']) {
     ok(typeof load(NS, 'dom-collections').iterator === 'function');
     ok(typeof load(NS, 'dom-collections/for-each') === 'function');
     ok(typeof load(NS, 'dom-collections/iterator') === 'function');
@@ -541,28 +527,50 @@ for (PATH of ['core-js-pure', 'core-js']) {
     ok(typeof load(NS, 'url-search-params') === 'function');
   }
 
+  for (const NS of ['actual', 'full']) {
+    ok(load(NS, 'array/at')([1, 2, 3], -2) === 2);
+    ok(load(NS, 'array/virtual/at').call([1, 2, 3], -2) === 2);
+    ok(load(NS, 'string/at')('a', 0) === 'a');
+    ok(load(NS, 'string/virtual/at').call('a', 0) === 'a');
+    ok(load(NS, 'array/find-last')([1, 2, 3], it => it % 2) === 3);
+    ok(load(NS, 'array/find-last-index')([1, 2, 3], it => it % 2) === 2);
+    ok(load(NS, 'array/virtual/find-last').call([1, 2, 3], it => it % 2) === 3);
+    ok(load(NS, 'array/virtual/find-last-index').call([1, 2, 3], it => it % 2) === 2);
+    ok(load(NS, 'object/has-own')({ foo: 42 }, 'foo'));
+
+    const instanceAt = load(NS, 'instance/at');
+    ok(typeof instanceAt === 'function');
+    ok(instanceAt({}) === undefined);
+    ok(typeof instanceAt([]) === 'function');
+    ok(typeof instanceAt('') === 'function');
+    ok(instanceAt([]).call([1, 2, 3], 2) === 3);
+    ok(instanceAt('').call('123', 2) === '3');
+
+    const instanceFindLastIndex = load(NS, 'instance/find-last-index');
+    ok(typeof instanceFindLastIndex === 'function');
+    ok(instanceFindLastIndex({}) === undefined);
+    ok(typeof instanceFindLastIndex([]) === 'function');
+    ok(instanceFindLastIndex([]).call([1, 2, 3], it => it % 2) === 2);
+
+    const instanceFindLast = load(NS, 'instance/find-last');
+    ok(typeof instanceFindLast === 'function');
+    ok(instanceFindLast({}) === undefined);
+    ok(typeof instanceFindLast([]) === 'function');
+    ok(instanceFindLast([]).call([1, 2, 3], it => it % 2) === 3);
+  }
+
   {
-    const NS = 'features';
+    const NS = 'full';
 
     const Map = load(NS, 'map');
     const Set = load(NS, 'set');
     const WeakMap = load(NS, 'weak-map');
     const WeakSet = load(NS, 'weak-set');
-    ok(load(NS, 'array/at')([1, 2, 3], -2) === 2);
-    ok(typeof load(NS, 'array/filter-out') === 'function');
     ok(typeof load(NS, 'array/filter-reject') === 'function');
-    ok(load(NS, 'array/find-last')([1, 2, 3], it => it % 2) === 3);
-    ok(load(NS, 'array/find-last-index')([1, 2, 3], it => it % 2) === 2);
     ok(typeof load(NS, 'array/group-by') === 'function');
     ok(typeof load(NS, 'array/is-template-object') === 'function');
-    load(NS, 'array/last-item');
-    load(NS, 'array/last-index');
     ok(typeof load(NS, 'array/unique-by') === 'function');
-    ok(load(NS, 'array/virtual/at').call([1, 2, 3], -2) === 2);
-    ok(typeof load(NS, 'array/virtual/filter-out') === 'function');
     ok(typeof load(NS, 'array/virtual/filter-reject') === 'function');
-    ok(load(NS, 'array/virtual/find-last').call([1, 2, 3], it => it % 2) === 3);
-    ok(load(NS, 'array/virtual/find-last-index').call([1, 2, 3], it => it % 2) === 2);
     ok(typeof load(NS, 'array/virtual/group-by') === 'function');
     ok(typeof load(NS, 'array/virtual/unique-by') === 'function');
     ok(typeof load(NS, 'async-iterator') === 'function');
@@ -611,42 +619,24 @@ for (PATH of ['core-js-pure', 'core-js']) {
     ok(load(NS, 'map/map-keys')(new Map([[1, 2], [2, 3], [3, 4]]), it => it).size === 3);
     ok(load(NS, 'map/map-values')(new Map([[1, 2], [2, 3], [3, 4]]), it => it).size === 3);
     ok(load(NS, 'map/merge')(new Map([[1, 2], [2, 3]]), [[2, 4], [4, 5]]).size === 3);
-    ok(load(NS, 'map/update-or-insert')(new Map([[1, 2]]), 1, it => it ** 2, () => 42) === 4);
-    ok(load(NS, 'map/upsert')(new Map([[1, 2]]), 1, it => it ** 2, () => 42) === 4);
     ok(load(NS, 'math/clamp')(6, 2, 4) === 4);
     ok(load(NS, 'math/deg-per-rad') === Math.PI / 180);
     ok(load(NS, 'math/degrees')(Math.PI) === 180);
     ok(load(NS, 'math/fscale')(3, 1, 2, 1, 2) === 3);
-    ok(load(NS, 'math/iaddh')(3, 2, 0xFFFFFFFF, 4) === 7);
-    ok(load(NS, 'math/isubh')(3, 4, 0xFFFFFFFF, 2) === 1);
-    ok(load(NS, 'math/imulh')(0xFFFFFFFF, 7) === -1);
     ok(load(NS, 'math/rad-per-deg') === 180 / Math.PI);
     ok(load(NS, 'math/radians')(180) === Math.PI);
     ok(load(NS, 'math/scale')(3, 1, 2, 1, 2) === 3);
-    ok(typeof load(NS, 'math/seeded-prng')({ seed: 42 }).next().value === 'number');
     ok(load(NS, 'math/signbit')(-2) === true);
-    ok(load(NS, 'math/umulh')(0xFFFFFFFF, 7) === 6);
     ok(load(NS, 'map/of')([1, 2], [3, 4]) instanceof Map);
     ok(load(NS, 'map/reduce')(new Map([[1, 2], [2, 3], [3, 4]]), (a, b) => a + b) === 9);
     ok(load(NS, 'map/some')(new Map([[1, 2], [2, 3], [3, 4]]), it => it % 2) === true);
     ok(load(NS, 'map/update')(new Map([[1, 2]]), 1, it => it * 2).get(1) === 4);
     ok(load(NS, 'number/from-string')('12', 3) === 5);
     ok(load(NS, 'number/range')(1, 2).next().value === 1);
-    ok(load(NS, 'object/has-own')({ foo: 42 }, 'foo'));
-    ok(typeof load(NS, 'object/iterate-entries')({}).next === 'function');
-    ok(typeof load(NS, 'object/iterate-keys')({}).next === 'function');
-    ok(typeof load(NS, 'object/iterate-values')({}).next === 'function');
     ok('from' in load(NS, 'observable'));
-    ok(typeof load(NS, 'reflect/define-metadata') === 'function');
-    ok(typeof load(NS, 'reflect/delete-metadata') === 'function');
-    ok(typeof load(NS, 'reflect/get-metadata') === 'function');
-    ok(typeof load(NS, 'reflect/get-metadata-keys') === 'function');
-    ok(typeof load(NS, 'reflect/get-own-metadata') === 'function');
-    ok(typeof load(NS, 'reflect/get-own-metadata-keys') === 'function');
-    ok(typeof load(NS, 'reflect/has-metadata') === 'function');
-    ok(typeof load(NS, 'reflect/has-own-metadata') === 'function');
-    ok(typeof load(NS, 'reflect/metadata') === 'function');
-    ok(load(NS, 'promise/try')(() => 42) instanceof load(NS, 'promise'));
+    ok(typeof load(NS, 'observable/constructor') === 'function');
+    ok(typeof load(NS, 'observable/from') === 'function');
+    ok(typeof load(NS, 'observable/of') === 'function');
     ok(load(NS, 'set/add-all')(new Set([1, 2, 3]), 4, 5).size === 5);
     ok(load(NS, 'set/delete-all')(new Set([1, 2, 3]), 4, 5) === false);
     ok(load(NS, 'set/difference')(new Set([1, 2, 3]), [3, 4, 5]).size === 2);
@@ -665,20 +655,15 @@ for (PATH of ['core-js-pure', 'core-js']) {
     ok(load(NS, 'set/some')(new Set([1, 2, 3]), it => typeof it == 'number'));
     ok(load(NS, 'set/symmetric-difference')(new Set([1, 2, 3]), [3, 4, 5]).size === 4);
     ok(load(NS, 'set/union')(new Set([1, 2, 3]), [3, 4, 5]).size === 5);
-    ok(load(NS, 'string/at')('a', 0) === 'a');
     ok('next' in load(NS, 'string/code-points')('a'));
-    ok(load(NS, 'string/virtual/at').call('a', 0) === 'a');
     ok('next' in load(NS, 'string/virtual/code-points').call('a'));
     ok(load(NS, 'symbol/async-dispose'));
     ok(load(NS, 'symbol/dispose'));
     ok(load(NS, 'symbol/matcher'));
     ok(load(NS, 'symbol/metadata'));
     ok(load(NS, 'symbol/observable'));
-    ok(load(NS, 'symbol/pattern-match'));
-    ok(load(NS, 'symbol/replace-all'));
     ok(load(NS, 'weak-map/delete-all')(new WeakMap(), [], {}) === false);
     ok(load(NS, 'weak-map/emplace')(new WeakMap(), {}, { insert: () => ({ a: 42 }) }).a === 42);
-    ok(load(NS, 'weak-map/upsert')(new WeakMap(), {}, null, () => 42) === 42);
     ok(load(NS, 'weak-map/from')([[{}, 1], [[], 2]]) instanceof WeakMap);
     ok(load(NS, 'weak-map/of')([{}, 1], [[], 2]) instanceof WeakMap);
     ok(load(NS, 'weak-set/add-all')(new WeakSet(), [], {}) instanceof WeakSet);
@@ -686,37 +671,11 @@ for (PATH of ['core-js-pure', 'core-js']) {
     ok(load(NS, 'weak-set/from')([{}, []]) instanceof WeakSet);
     ok(load(NS, 'weak-set/of')({}, []) instanceof WeakSet);
 
-    const instanceAt = load(NS, 'instance/at');
-    ok(typeof instanceAt === 'function');
-    ok(instanceAt({}) === undefined);
-    ok(typeof instanceAt([]) === 'function');
-    ok(typeof instanceAt('') === 'function');
-    ok(instanceAt([]).call([1, 2, 3], 2) === 3);
-    ok(instanceAt('').call('123', 2) === '3');
-
     const instanceCodePoints = load(NS, 'instance/code-points');
     ok(typeof instanceCodePoints === 'function');
     ok(instanceCodePoints({}) === undefined);
     ok(typeof instanceCodePoints('') === 'function');
     ok(instanceCodePoints('').call('abc').next().value.codePoint === 97);
-
-    const instanceFindLastIndex = load(NS, 'instance/find-last-index');
-    ok(typeof instanceFindLastIndex === 'function');
-    ok(instanceFindLastIndex({}) === undefined);
-    ok(typeof instanceFindLastIndex([]) === 'function');
-    ok(instanceFindLastIndex([]).call([1, 2, 3], it => it % 2) === 2);
-
-    const instanceFindLast = load(NS, 'instance/find-last');
-    ok(typeof instanceFindLast === 'function');
-    ok(instanceFindLast({}) === undefined);
-    ok(typeof instanceFindLast([]) === 'function');
-    ok(instanceFindLast([]).call([1, 2, 3], it => it % 2) === 3);
-
-    const instanceFilterOut = load(NS, 'instance/filter-out');
-    ok(typeof instanceFilterOut === 'function');
-    ok(instanceFilterOut({}) === undefined);
-    ok(typeof instanceFilterOut([]) === 'function');
-    ok(instanceFilterOut([]).call([1, 2, 3], it => it % 2).length === 1);
 
     const instanceFilterReject = load(NS, 'instance/filter-reject');
     ok(typeof instanceFilterReject === 'function');
@@ -738,7 +697,6 @@ for (PATH of ['core-js-pure', 'core-js']) {
   }
 
   load('proposals/accessible-object-hasownproperty');
-  load('proposals/array-last');
   load('proposals/array-filtering');
   load('proposals/array-find-from-last');
   load('proposals/array-grouping');
@@ -747,54 +705,31 @@ for (PATH of ['core-js-pure', 'core-js']) {
   load('proposals/collection-methods');
   load('proposals/collection-of-from');
   load('proposals/decorators');
-  load('proposals/efficient-64-bit-arithmetic');
   load('proposals/iterator-helpers');
   load('proposals/keys-composition');
-  load('proposals/map-update-or-insert');
   load('proposals/map-upsert');
   load('proposals/math-extensions');
   load('proposals/math-signbit');
   load('proposals/number-from-string');
   load('proposals/number-range');
-  load('proposals/object-iteration');
   load('proposals/observable');
   load('proposals/pattern-matching');
-  load('proposals/promise-any');
-  load('proposals/promise-try');
-  load('proposals/reflect-metadata');
   load('proposals/relative-indexing-method');
-  load('proposals/seeded-random');
   load('proposals/set-methods');
-  load('proposals/string-at');
   load('proposals/string-code-points');
-  load('proposals/string-match-all');
-  load('proposals/string-replace-all');
   load('proposals/using-statement');
-  load('proposals/url');
   load('proposals');
-
   ok(load('stage/4'));
   ok(load('stage/3'));
   ok(load('stage/2'));
   ok(load('stage/1'));
-  ok(load('stage/0'));
-  ok(load('stage/pre'));
-  ok(load('stage'));
-
-  ok(load('web/dom-collections'));
-  ok(load('web/immediate'));
-  ok(load('web/queue-microtask'));
-  ok(load('web/timers'));
-  ok(load('web/url'));
-  ok(load('web/url-search-params'));
-  ok(load('web'));
 
   for (const key in compat) load('modules', key);
 
   ok(load(''));
 }
 
-for (const NS of ['es', 'stable', 'features']) {
+for (const NS of ['es', 'stable', 'actual', 'full']) {
   ok(typeof load(NS, 'string/match') === 'function');
   ok('next' in load(NS, 'string/match-all')('a', /./g));
   ok(typeof load(NS, 'string/replace') === 'function');
@@ -846,19 +781,22 @@ for (const NS of ['es', 'stable', 'features']) {
   ok(typeof load(NS, 'typed-array').Uint32Array === 'function');
 }
 
-{
-  const NS = 'features';
-
+for (const NS of ['actual', 'full']) {
   load(NS, 'typed-array/at');
-  load(NS, 'typed-array/filter-out');
-  load(NS, 'typed-array/filter-reject');
   load(NS, 'typed-array/find-last');
   load(NS, 'typed-array/find-last-index');
+}
+
+{
+  const NS = 'full';
+
+  load(NS, 'typed-array/filter-reject');
   load(NS, 'typed-array/group-by');
   load(NS, 'typed-array/unique-by');
 }
 
-load('modules/esnext.string.at-alternative');
+load('bundle/actual');
+load('bundle/full');
 
 console.log(chalk.green(`tested ${ chalk.cyan(tested.size) } commonjs entry points`));
 
