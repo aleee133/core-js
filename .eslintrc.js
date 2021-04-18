@@ -1035,7 +1035,6 @@ module.exports = {
         'packages/core-js-builder/**',
         'packages/core-js-compat/**',
         // dev
-        'packages/core-js-compat/src/**',
         'scripts/**',
         'tests/observables/**',
         'tests/promises-aplus/**',
