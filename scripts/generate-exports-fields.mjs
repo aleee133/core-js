@@ -3,7 +3,7 @@ import entries from '@core-js/compat/entries';
 const core = Object.entries(Object.keys(entries).reduce((accumulator, it) => {
   const entry = it.replace(/^core-js(\/)?/, './');
   // eslint-disable-next-line unicorn/no-unsafe-regex -- safe
-  const match = entry.match(/^(\.\/(?:es|stable|actual|full)(?:\/[\w-]+)?)/);
+  const match = entry.match(/^(\.\/(?:actual|es|full|stable)(?:\/[\w-]+)?)/);
   if (match) {
     const [, scope] = match;
     if (entry === scope) {
