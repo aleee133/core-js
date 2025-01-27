@@ -10,10 +10,15 @@ async function getJSON(path, ...slice) {
   return JSON.parse(text.slice(...slice));
 }
 
-async function latestMDN(name, branch = 'mdn/browser-compat-data/main') {
+async function getFromMDN(name, branch = 'mdn/browser-compat-data/main') {
   const {
     browsers: { [name]: { releases } },
   } = await getJSON(`https://raw.githubusercontent.com/${ branch }/browsers/${ name }.json`);
+  return releases;
+}
+
+async function getLatestFromMDN(name, branch) {
+  const releases = await getFromMDN(name, branch);
   const version = Object.keys(releases).reduce((a, b) => {
     return releases[b].engine_version && cmp(coerce(b), '>', coerce(a)) ? b : a;
   });
@@ -32,29 +37,39 @@ function latest(array) {
 function assert(condition, engine) {
   if (!condition) {
     updated = false;
-    console.log(chalk.red(`${ chalk.cyan(engine) } mapping should be updated`));
+    echo(chalk.red(`${ chalk.cyan(engine) } mapping should be updated`));
   }
 }
 
-const [{ v8 }] = await getJSON('https://nodejs.org/dist/index.json');
+const [
+  [{ v8 }],
+  electron,
+  deno,
+  oculus,
+  opera,
+  operaAndroid,
+  safari,
+  ios,
+  samsung,
+] = await Promise.all([
+  getJSON('https://nodejs.org/dist/index.json'),
+  getJSON('https://raw.githubusercontent.com/Kilian/electron-to-chromium/master/chromium-versions.js', 17, -1),
+  getLatestFromMDN('deno'),
+  getLatestFromMDN('oculus'),
+  getLatestFromMDN('opera'),
+  getLatestFromMDN('opera_android'),
+  getFromMDN('safari'),
+  getLatestFromMDN('safari_ios'),
+  getLatestFromMDN('samsunginternet_android'),
+]);
+
 assert(modernV8ToChrome(v8) <= latest(mapping.ChromeToNode)[0], 'NodeJS');
-
-const deno = await latestMDN('deno');
-assert(modernV8ToChrome(deno.engine) <= latest(mapping.ChromeToDeno)[0], 'Deno');
-
-const electron = await getJSON('https://raw.githubusercontent.com/Kilian/electron-to-chromium/master/chromium-versions.js', 17, -1);
 assert(latest(Object.entries(electron))[0] <= latest(mapping.ChromeToElectron)[0], 'Electron');
+assert(modernV8ToChrome(deno.engine) <= latest(mapping.ChromeToDeno)[0], 'Deno');
+assert(oculus.engine <= latest(mapping.ChromeAndroidToQuest)[0], 'Meta Quest');
+assert(opera.version === String(mapping.ChromeToOpera(opera.engine)), 'Opera');
+assert(operaAndroid.engine <= latest(mapping.ChromeAndroidToOperaAndroid)[0], 'Opera for Android');
+assert(ios.version === Object.entries(safari).find(([, { engine_version: engine }]) => engine === ios.engine)[0], 'iOS Safari');
+assert(samsung.engine <= latest(mapping.ChromeAndroidToSamsung)[0], 'Samsung Internet');
 
-const samsung = await latestMDN('samsunginternet_android');
-assert(samsung.engine <= latest(mapping.ChromeToSamsung)[0], 'Samsung Internet');
-
-const operaMobile = await latestMDN('opera_android');
-assert(operaMobile.engine <= latest(mapping.ChromeToOperaMobile)[0], 'Opera Mobile');
-
-const opera = await latestMDN('opera');
-assert(opera.engine - opera.version === 14, 'Opera');
-
-const ios = await latestMDN('safari_ios');
-assert(cmp(coerce(ios.version), '<=', coerce(latest(mapping.SafariToIOS)[1])), 'iOS Safari');
-
-if (updated) console.log(chalk.green('updates of compat data mapping not required'));
+if (updated) echo(chalk.green('updates of compat data mapping not required'));

@@ -12,7 +12,7 @@
 - 它能够不污染全局命名空间
 - 它[和babel紧密集成](https://github.com/zloirock/core-js/blob/master/docs/2019-03-19-core-js-3-babel-and-a-look-into-the-future.md#Babel)：这能够优化`core-js`的导入
 
-它是最普遍、[最流行](https://www.npmtrends.com/core-js-vs-es5-shim-vs-es6-shim-vs-airbnb-js-shims-vs-polyfill-library-vs-polyfill-service-vs-js-polyfills) 的给 JavaScript 标准库打补丁的方式，但是有很大一部分开发者并不知道他们间接的使用了`core-js`🙂
+它是最普遍、[最流行](https://npmtrends.com/airbnb-js-shims-vs-core-js-vs-es5-shim-vs-es6-shim-vs-js-polyfills-vs-polyfill-library-vs-polyfill-service) 的给 JavaScript 标准库打补丁的方式，但是有很大一部分开发者并不知道他们间接的使用了`core-js`🙂
 
 ## 贡献
 
@@ -123,7 +123,7 @@
 
 #### 移除过时的功能：
 
-- `Reflect.enumrate` 因为他已经从标准中移除了
+- `Reflect.enumerate` 因为他已经从标准中移除了
 - `System.global` 和 `global` 现在他们已经被 `globalThis` 代替
 - `Array.prototype.flatten` 现在被 `Array.prototype.flat` 代替
 - `asap` 被 `queueMicrotask` 代替
@@ -235,7 +235,7 @@ Babel 7.4.0 引入了两种模式的共同更改，以及每种模式的特定�
 `@babel/preset-env` 最重要的一个功能就是提供不同浏览器支持特性的数据来源，用来确定是否需要 `core-js` 填充某些内容。 [`caniuse`](https://caniuse.com/)，[`mdn`](https://developer.mozilla.org/en-US/) 和 [`compat-table`](http://kangax.github.io/compat-table/es6/) 是很好的教育资源，但是并不意味着他们能够作为数据源被开发者使用：只有 `compat-table` 包函好的 ES 相关数据集，它被 `@babel/preset-env` 使用，但是仍有些限制：
 
 - 它包含的数据仅仅关于 ECMAScript 特性和提案，和 web 平台特性例如 `setImmediate` 或者 DOM 集合迭代器没有关系。所以直到现在，`@babel/preset-env` 仍然通过 `core-js` 添加全部的 web 平台特性即使他们已经支持了。
-- 它他不包含任何浏览器（甚至是严重的）bug 信息：例如，上文提到的在 Safari 12 中 `Array#reverse`，但是 `compat-table` 并没有将它标记为不支持。另一方面，`core-js` 已经修复了这个错误实现，但是因为 `compat-table` 关系，并不能使用它。
+- 它不包含任何浏览器（甚至是严重的）bug 信息：例如，上文提到的在 Safari 12 中 `Array#reverse`，但是 `compat-table` 并没有将它标记为不支持。另一方面，`core-js` 已经修复了这个错误实现，但是因为 `compat-table` 关系，并不能使用它。
 - 它仅包函一些基础的、简单的测试，没有检查功能在真实环境下是否可以正常工作。例如，老版本 Safari 的破坏的迭代器没有 `.next` 方法，但是 `compat-table` 表明 Safari 支持，因为它用 `typeof` 方法检测迭代器方法返回了 `"function"`。一些像 typed arrays 的功能几乎没有覆盖。
 
 - `compat-table` 不是为了向工具提供数据而设计的。我是 `compat-table` 的维护者之一，但是[其他的维护者反对为维护这个功能](https://github.com/kangax/compat-table/pull/1312)。
@@ -264,7 +264,7 @@ import "regenerator-runtime/runtime";
 import "core-js/modules/es.array.unscopables.flat";
 import "core-js/modules/es.array.unscopaables.flat-map";
 import "core-js/modules/es.object.from-entries";
-import "core-js/modlues/web.immediate";
+import "core-js/modules/web.immediate";
 ```
 
 当目标浏览器是 `chrome 73`（它完全支持 ES2019 标准库），他将变为很少的引入：
@@ -368,7 +368,7 @@ string.matchAll(/something/g);
 ```js
 import _Set from "@babel/runtime-corejs/core-js-stable/set";
 
-new _set([1, 2, 3, 2, 1]);
+new _Set([1, 2, 3, 2, 1]);
 string.matchAll(/something/g);
 ```
 
@@ -385,7 +385,7 @@ _matchAllInstanceProperty(string).call(string, /something/g);
 有些老的问题已经被修复了。例如，下面这种流行的模式在 `@babel/runtime-corejs2` 不工作，但是在 `@babel/runtime-corejs3` 被支持。
 
 ```js
-myArrayLikeObject[Symbol.tierator] = Array.prototype[Symbol.iterator];
+myArrayLikeObject[Symbol.iterator] = Array.prototype[Symbol.iterator];
 ```
 
 尽管 `@babel/runtime` 早期版本不支持实例方法，但是使用一些自定义的帮助函数能够支持迭代（`[Symbol.iterator]()` 和他的presence）。之前不支持提取 `[Symbol.iterator]` 方法，但是现在支持了。
@@ -424,7 +424,7 @@ myArrayLikeObject[Symbol.tierator] = Array.prototype[Symbol.iterator];
 
 ### 针对目标环境的 `@babel/runtime`
 
-目前，我们不能像对 `@babel/preset-env` 那样为 `@babel/runtimne` 设置目标加环境。这意味即使目标是现代浏览器， `@babel/runtime` 也将注所有可能的 polyfills：这不必要的增加了最终构建包的大小。
+目前，我们不能像对 `@babel/preset-env` 那样为 `@babel/runtime` 设置目标加环境。这意味即使目标是现代浏览器， `@babel/runtime` 也将注所有可能的 polyfills：这不必要的增加了最终构建包的大小。
 
 现在 `core-js-compat` 包函全部必要数据，将来，可以在 `@babel/runtime` 中添加对目标环境的编译支持，并且在 `@babel/preset-env` 中添加 `useBuiltIns: runtime` 选项。
 
